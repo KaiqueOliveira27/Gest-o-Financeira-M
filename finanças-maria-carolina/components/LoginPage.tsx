@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 
 export const LoginPage: React.FC = () => {
@@ -8,6 +8,24 @@ export const LoginPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const translateError = (errorMessage: string): string => {
+        const errorMap: { [key: string]: string } = {
+            'Invalid login credentials': 'E-mail ou senha incorretos',
+            'Email not confirmed': 'E-mail não confirmado. Verifique sua caixa de entrada.',
+            'Invalid email or password': 'E-mail ou senha inválidos',
+            'User not found': 'Usuário não encontrado',
+            'Too many requests': 'Muitas tentativas. Aguarde alguns minutos.',
+        };
+
+        for (const [key, value] of Object.entries(errorMap)) {
+            if (errorMessage.includes(key)) {
+                return value;
+            }
+        }
+
+        return 'Erro ao fazer login. Verifique suas credenciais e tente novamente.';
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -15,15 +33,21 @@ export const LoginPage: React.FC = () => {
 
         try {
             const { data, error } = await supabase.auth.signInWithPassword({
-                email,
+                email: email.trim(),
                 password,
             });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Login error:', error);
+                throw error;
+            }
 
-            // Login successful - App.tsx will handle the redirect
+            if (data.user) {
+                console.log('Login successful:', data.user.email);
+            }
         } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
+            console.error('Login error details:', err);
+            setError(translateError(err.message || err.error_description || 'Erro desconhecido'));
         } finally {
             setIsLoading(false);
         }
@@ -54,7 +78,7 @@ export const LoginPage: React.FC = () => {
                         {/* Email Input */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Email
+                                E-mail
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -65,6 +89,7 @@ export const LoginPage: React.FC = () => {
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                                     placeholder="seu@email.com"
+                                    autoComplete="email"
                                 />
                             </div>
                         </div>
@@ -83,14 +108,21 @@ export const LoginPage: React.FC = () => {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                                     placeholder="••••••••"
+                                    autoComplete="current-password"
                                 />
                             </div>
                         </div>
 
                         {/* Error Message */}
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                                {error}
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium text-red-800">Erro ao fazer login</p>
+                                        <p className="text-sm text-red-700 mt-1">{error}</p>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -98,7 +130,7 @@ export const LoginPage: React.FC = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                         >
                             {isLoading ? (
                                 <>
@@ -113,6 +145,13 @@ export const LoginPage: React.FC = () => {
                             )}
                         </button>
                     </form>
+
+                    {/* Help Text */}
+                    <div className="mt-6 text-center">
+                        <p className="text-xs text-gray-500">
+                            Use o e-mail e senha cadastrados no sistema
+                        </p>
+                    </div>
                 </div>
 
                 {/* Footer */}
