@@ -23,7 +23,7 @@ export const LoginPage: React.FC = () => {
             }
         }
 
-        return 'Erro ao fazer login. Verifique suas credenciais e tente novamente.';
+        return `Erro ao fazer login. (${errorMessage})`;
     };
 
     const handleLogin = async (e: React.FormEvent) => {
