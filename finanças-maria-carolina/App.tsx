@@ -5,21 +5,17 @@ import {
   TrendingUp,
   ArrowUpCircle,
   ArrowDownCircle,
-  Sparkles,
   MoreHorizontal
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { MonthlyData } from './types';
 import { formatCurrency, sortFinancialData } from './services/financeService';
-import { getFinancialAdvice } from './services/geminiService';
 import { DataService } from './services/dataService';
 import { PorquinhoCard } from './components/PorquinhoCard';
 import { FinancialForm } from './components/FinancialForm';
 
 function App() {
   const [data, setData] = useState<MonthlyData[]>([]);
-  const [advice, setAdvice] = useState<string>('');
-  const [isLoadingAdvice, setIsLoadingAdvice] = useState<boolean>(false);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   // Load data from Supabase/localStorage on mount
@@ -55,12 +51,7 @@ function App() {
     }
   };
 
-  const handleAskAI = async () => {
-    setIsLoadingAdvice(true);
-    const result = await getFinancialAdvice(sortedData);
-    setAdvice(result);
-    setIsLoadingAdvice(false);
-  };
+
 
   // Ensure charts have enough height on mobile
   return (
@@ -224,49 +215,6 @@ function App() {
         {/* Porquinho Special Section */}
         <section>
           <PorquinhoCard currentSaved={currentMonthData.savingsBalance} />
-        </section>
-
-        {/* AI Advisor Section */}
-        <section className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Sparkles className="w-6 h-6 text-yellow-300" />
-              </div>
-              <h3 className="text-xl font-bold">Assistente Financeiro IA</h3>
-            </div>
-
-            {!advice ? (
-              <div className="text-indigo-100">
-                <p className="mb-6 max-w-2xl">
-                  Gostaria de uma análise personalizada sobre como melhorar seus rendimentos no Porquinho e otimizar seus gastos?
-                </p>
-                <button
-                  onClick={handleAskAI}
-                  disabled={isLoadingAdvice || data.length === 0}
-                  className="bg-white text-indigo-600 hover:bg-indigo-50 font-semibold py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isLoadingAdvice ? 'Analisando...' : 'Gerar Análise Agora'}
-                  {!isLoadingAdvice && <Sparkles className="w-4 h-4" />}
-                </button>
-                {data.length === 0 && <p className="text-xs mt-2 text-indigo-300">Adicione registros para gerar análise.</p>}
-              </div>
-            ) : (
-              <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/10 animate-fade-in">
-                <div className="prose prose-invert max-w-none">
-                  <p className="whitespace-pre-line text-lg leading-relaxed">{advice}</p>
-                </div>
-                <button
-                  onClick={() => setAdvice('')}
-                  className="mt-4 text-sm text-indigo-200 hover:text-white underline"
-                >
-                  Nova Análise
-                </button>
-              </div>
-            )}
-          </div>
         </section>
 
       </main>
