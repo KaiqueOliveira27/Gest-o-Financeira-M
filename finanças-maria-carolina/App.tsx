@@ -5,7 +5,8 @@ import {
   TrendingUp,
   ArrowUpCircle,
   ArrowDownCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  LogOut
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { MonthlyData } from './types';
@@ -14,15 +15,45 @@ import { DataService } from './services/dataService';
 import { PorquinhoCard } from './components/PorquinhoCard';
 import { FinancialForm } from './components/FinancialForm';
 import { MonthlyDataList } from './components/MonthlyDataList';
+import { LoginPage } from './components/LoginPage';
+import { supabase } from './services/supabaseClient';
+import type { User } from '@supabase/supabase-js';
 
 function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [data, setData] = useState<MonthlyData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
-  // Load data from Supabase/localStorage on mount
+  // Check authentication status on mount
   useEffect(() => {
-    loadData();
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  // Load data when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+    } catch (error) {
+      console.error('Error checking auth:', error);
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
 
   const loadData = async () => {
     setIsLoadingData(true);
@@ -66,6 +97,31 @@ function App() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setData([]);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  // Show loading while checking auth
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!user) {
+    return <LoginPage />;
+  }
 
   // Ensure charts have enough height on mobile
   return (
@@ -81,8 +137,13 @@ function App() {
               Olá, <span className="text-indigo-600">Maria Carolina</span>
             </h1>
           </div>
-          <button className="p-2 text-gray-400 hover:text-gray-600">
-            <MoreHorizontal className="w-6 h-6" />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Sair"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium">Sair</span>
           </button>
         </div>
       </header>
