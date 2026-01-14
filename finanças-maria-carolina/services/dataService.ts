@@ -88,19 +88,21 @@ export class DataService {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
 
-                if (user) {
-                    const { error } = await supabase
-                        .from('monthly_data')
-                        .delete()
-                        .eq('id', id)
-                        .eq('user_id', user.id);
+                // Delete from Supabase (works with or without authentication)
+                const { error } = await supabase
+                    .from('monthly_data')
+                    .delete()
+                    .eq('id', id);
 
-                    if (error) throw error;
-
-                    // Also delete from localStorage
-                    this.deleteLocalData(id);
-                    return;
+                if (error) {
+                    console.error('Supabase delete error:', error);
+                    throw error;
                 }
+
+                // Also delete from localStorage
+                this.deleteLocalData(id);
+                console.log('Data deleted successfully from Supabase');
+                return;
             } catch (error) {
                 console.error('Error deleting from Supabase, falling back to localStorage:', error);
             }

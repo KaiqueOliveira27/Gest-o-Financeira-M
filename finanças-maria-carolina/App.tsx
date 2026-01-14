@@ -13,6 +13,7 @@ import { formatCurrency, sortFinancialData } from './services/financeService';
 import { DataService } from './services/dataService';
 import { PorquinhoCard } from './components/PorquinhoCard';
 import { FinancialForm } from './components/FinancialForm';
+import { MonthlyDataList } from './components/MonthlyDataList';
 
 function App() {
   const [data, setData] = useState<MonthlyData[]>([]);
@@ -51,6 +52,19 @@ function App() {
     }
   };
 
+  const handleDeleteData = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este registro?')) {
+      return;
+    }
+
+    try {
+      await DataService.deleteMonthlyData(id);
+      await loadData(); // Reload data from database
+    } catch (error) {
+      console.error('Error deleting data:', error);
+      alert('Erro ao excluir dados. Tente novamente.');
+    }
+  };
 
 
   // Ensure charts have enough height on mobile
@@ -132,6 +146,11 @@ function App() {
         {/* Input Form */}
         <section>
           <FinancialForm onSave={handleSaveData} />
+        </section>
+
+        {/* Monthly Data List */}
+        <section>
+          <MonthlyDataList data={sortedData} onDelete={handleDeleteData} />
         </section>
 
         {/* Charts Section */}
