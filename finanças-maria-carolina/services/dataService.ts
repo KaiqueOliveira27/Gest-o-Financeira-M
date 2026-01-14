@@ -15,15 +15,21 @@ export class DataService {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
 
-                if (user) {
-                    const { data, error } = await supabase
-                        .from('monthly_data')
-                        .select('*')
-                        .order('month', { ascending: true });
+                // Fetch from Supabase (works with or without authentication)
+                const { data, error } = await supabase
+                    .from('monthly_data')
+                    .select('*')
+                    .or(`user_id.is.null,user_id.eq.${user?.id || 'null'}`)
+                    .order('month', { ascending: true });
 
-                    if (error) throw error;
+                if (error) {
+                    console.error('Supabase fetch error:', error);
+                    throw error;
+                }
 
-                    return (data || []).map(this.mapRowToMonthlyData);
+                if (data && data.length > 0) {
+                    console.log('Data loaded from Supabase:', data.length, 'records');
+                    return data.map(this.mapRowToMonthlyData);
                 }
             } catch (error) {
                 console.error('Error fetching from Supabase, falling back to localStorage:', error);
@@ -42,25 +48,29 @@ export class DataService {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
 
-                if (user) {
-                    const { error } = await supabase
-                        .from('monthly_data')
-                        .upsert({
-                            user_id: user.id,
-                            month: monthlyData.month,
-                            income: monthlyData.income,
-                            expenses: monthlyData.expenses,
-                            savings_balance: monthlyData.savingsBalance,
-                        }, {
-                            onConflict: 'user_id,month'
-                        });
+                // Save to Supabase (works with or without authentication)
+                const { error } = await supabase
+                    .from('monthly_data')
+                    .upsert({
+                        id: monthlyData.id,
+                        user_id: user?.id || null, // Allow NULL for anonymous users
+                        month: monthlyData.month,
+                        income: monthlyData.income,
+                        expenses: monthlyData.expenses,
+                        savings_balance: monthlyData.savingsBalance,
+                    }, {
+                        onConflict: 'id' // Use id as unique constraint
+                    });
 
-                    if (error) throw error;
-
-                    // Also save to localStorage as backup
-                    this.saveLocalData(monthlyData);
-                    return;
+                if (error) {
+                    console.error('Supabase save error:', error);
+                    throw error;
                 }
+
+                // Also save to localStorage as backup
+                this.saveLocalData(monthlyData);
+                console.log('Data saved successfully to Supabase');
+                return;
             } catch (error) {
                 console.error('Error saving to Supabase, falling back to localStorage:', error);
             }
