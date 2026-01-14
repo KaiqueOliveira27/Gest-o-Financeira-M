@@ -2,7 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://eqecfiezurkvacbehupv.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxZWNmaWV6dXJrdmFjYmVodXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzODM2MTYsImV4cCI6MjA4Mzk1OTYxNn0.DGEgrNcSyG5-c7UR-53UUi6LmOlmf4-Iafydd7WyUzc';
+// Modern publishable key
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_0-s1jeyozamiJ_LjG-BsaQ_k_VLHite';
+
+console.log('Initializing Supabase with URL:', supabaseUrl.substring(0, 10) + '...');
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -11,6 +14,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         autoRefreshToken: true,
     },
 });
+
+// For debugging purposes in the browser console
+if (typeof window !== 'undefined') {
+    (window as any).supabaseDebug = { url: supabaseUrl, isConfigured: !!supabaseUrl };
+}
 
 // Helper function to check if Supabase is configured
 export const isSupabaseConfigured = (): boolean => {
