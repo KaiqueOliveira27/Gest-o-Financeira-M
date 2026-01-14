@@ -3,7 +3,7 @@ import { LogIn, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 
 export const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState('carolina.5432@gmail.com');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
