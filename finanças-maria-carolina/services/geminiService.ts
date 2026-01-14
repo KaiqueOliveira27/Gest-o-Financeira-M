@@ -2,11 +2,12 @@ import { GoogleGenAI } from "@google/genai";
 import { MonthlyData } from "../types";
 
 const getAIClient = () => {
-  if (!process.env.API_KEY) {
-    console.warn("API_KEY not found in environment variables");
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("VITE_GEMINI_API_KEY not found in environment variables");
     return null;
   }
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey });
 };
 
 export const getFinancialAdvice = async (data: MonthlyData[]): Promise<string> => {
@@ -14,7 +15,7 @@ export const getFinancialAdvice = async (data: MonthlyData[]): Promise<string> =
   if (!ai) return "Configuração de API necessária para obter conselhos.";
 
   // Format data for the prompt
-  const dataSummary = data.slice(-6).map(d => 
+  const dataSummary = data.slice(-6).map(d =>
     `Mês: ${d.month}, Entrada: R$${d.income}, Saída: R$${d.expenses}, Guardado: R$${d.savingsBalance}`
   ).join('\n');
 
