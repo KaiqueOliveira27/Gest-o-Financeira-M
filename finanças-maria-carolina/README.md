@@ -17,7 +17,7 @@ git clone https://github.com/KaiqueOliveira27/Gest-o-Financeira-M.git
 cd Gest-o-Financeira-M/finanças-maria-carolina
 ```
 
-### 2. Instale as Dependências
+### 2. Instale as Dependências 
 
 ```bash
 npm install
