@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  TrendingUp, 
-  ArrowUpCircle, 
+import {
+  LayoutDashboard,
+  Wallet,
+  TrendingUp,
+  ArrowUpCircle,
   ArrowDownCircle,
   Sparkles,
   MoreHorizontal
@@ -12,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { MonthlyData } from './types';
 import { formatCurrency, sortFinancialData } from './services/financeService';
 import { getFinancialAdvice } from './services/geminiService';
+import { DataService } from './services/dataService';
 import { PorquinhoCard } from './components/PorquinhoCard';
 import { FinancialForm } from './components/FinancialForm';
 
@@ -19,6 +20,24 @@ function App() {
   const [data, setData] = useState<MonthlyData[]>([]);
   const [advice, setAdvice] = useState<string>('');
   const [isLoadingAdvice, setIsLoadingAdvice] = useState<boolean>(false);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
+
+  // Load data from Supabase/localStorage on mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoadingData(true);
+    try {
+      const monthlyData = await DataService.getMonthlyData();
+      setData(monthlyData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   // Derived state for dashboard
   const sortedData = useMemo(() => sortFinancialData(data), [data]);
@@ -26,12 +45,14 @@ function App() {
   const lastMonthSavings = sortedData.length > 1 ? sortedData[sortedData.length - 2].savingsBalance : 0;
   const savingsGrowth = currentMonthData.savingsBalance - lastMonthSavings;
 
-  const handleSaveData = (newData: MonthlyData) => {
-    setData(prev => {
-      // Remove existing entry for same month if exists, then add new
-      const filtered = prev.filter(d => d.month !== newData.month);
-      return [...filtered, newData];
-    });
+  const handleSaveData = async (newData: MonthlyData) => {
+    try {
+      await DataService.saveMonthlyData(newData);
+      await loadData(); // Reload data from database
+    } catch (error) {
+      console.error('Error saving data:', error);
+      alert('Erro ao salvar dados. Tente novamente.');
+    }
   };
 
   const handleAskAI = async () => {
@@ -62,7 +83,7 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
@@ -108,11 +129,11 @@ function App() {
                 <ArrowDownCircle className="w-6 h-6" />
               </div>
             </div>
-             <div className="text-sm">
-                <span className="text-gray-500">Saldo do mês: </span>
-                <span className={`font-bold ${(currentMonthData.income - currentMonthData.expenses) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {formatCurrency(currentMonthData.income - currentMonthData.expenses)}
-                </span>
+            <div className="text-sm">
+              <span className="text-gray-500">Saldo do mês: </span>
+              <span className={`font-bold ${(currentMonthData.income - currentMonthData.expenses) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {formatCurrency(currentMonthData.income - currentMonthData.expenses)}
+              </span>
             </div>
           </div>
         </div>
@@ -131,32 +152,32 @@ function App() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={sortedData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="month" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#94a3b8', fontSize: 12}}
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 12 }}
                       dy={10}
                     />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#94a3b8', fontSize: 12}}
-                      tickFormatter={(value) => `R$${value/1000}k`}
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 12 }}
+                      tickFormatter={(value) => `R$${value / 1000}k`}
                     />
-                    <RechartsTooltip 
+                    <RechartsTooltip
                       formatter={(value: number) => formatCurrency(value)}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
                     <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="savingsBalance" 
+                    <Line
+                      type="monotone"
+                      dataKey="savingsBalance"
                       name="Dinheiro Guardado"
-                      stroke="#059669" 
+                      stroke="#059669"
                       strokeWidth={3}
-                      dot={{fill: '#059669', strokeWidth: 2}}
-                      activeDot={{r: 6}}
+                      dot={{ fill: '#059669', strokeWidth: 2 }}
+                      activeDot={{ r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -169,17 +190,17 @@ function App() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sortedData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="month" 
-                      axisLine={false} 
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
                       tickLine={false}
-                      tick={{fill: '#94a3b8', fontSize: 12}}
+                      tick={{ fill: '#94a3b8', fontSize: 12 }}
                       dy={10}
                     />
                     <YAxis hide />
-                    <RechartsTooltip 
+                    <RechartsTooltip
                       formatter={(value: number) => formatCurrency(value)}
-                      cursor={{fill: '#f8fafc'}}
+                      cursor={{ fill: '#f8fafc' }}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
                     <Legend />
@@ -191,13 +212,13 @@ function App() {
             </div>
           </div>
         ) : (
-           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
-             <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-               <TrendingUp className="w-8 h-8 text-indigo-500" />
-             </div>
-             <h3 className="text-lg font-semibold text-gray-800">Comece a registrar</h3>
-             <p className="text-gray-500 mt-2">Adicione seu primeiro mês acima para ver os gráficos de evolução.</p>
-           </div>
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
+            <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-8 h-8 text-indigo-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Comece a registrar</h3>
+            <p className="text-gray-500 mt-2">Adicione seu primeiro mês acima para ver os gráficos de evolução.</p>
+          </div>
         )}
 
         {/* Porquinho Special Section */}
@@ -208,7 +229,7 @@ function App() {
         {/* AI Advisor Section */}
         <section className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -222,7 +243,7 @@ function App() {
                 <p className="mb-6 max-w-2xl">
                   Gostaria de uma análise personalizada sobre como melhorar seus rendimentos no Porquinho e otimizar seus gastos?
                 </p>
-                <button 
+                <button
                   onClick={handleAskAI}
                   disabled={isLoadingAdvice || data.length === 0}
                   className="bg-white text-indigo-600 hover:bg-indigo-50 font-semibold py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
@@ -237,7 +258,7 @@ function App() {
                 <div className="prose prose-invert max-w-none">
                   <p className="whitespace-pre-line text-lg leading-relaxed">{advice}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setAdvice('')}
                   className="mt-4 text-sm text-indigo-200 hover:text-white underline"
                 >
